@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE connector-j2ee-engine SYSTEM 'connector-j2ee-engine.dtd'>
+  <connector-j2ee-engine>
+     <loader-references>
+
+       <!-- Typically these SAP J2EE Facades are used -->
+       <loader-name strength="hard">service:engine.service.facade</loader-name>
+       <loader-name strength="hard">service:engine.application.facade</loader-name>
+       <loader-name strength="hard">service:engine.security.facade</loader-name>
+       <loader-name strength="hard">library:engine.j2ee14.facade</loader-name>
+       <loader-name strength="hard">library:com.sap.base.technology.facade</loader-name>
+
+       <!-- Use AF Facades in 7.1, never the single interfaces, libraries or services -->
+       <loader-name strength="hard">library:com.sap.aii.af.lib.facade</loader-name>
+       <loader-name strength="hard">interface:com.sap.aii.af.ifc.facade</loader-name>
+       <loader-name strength="hard">service:com.sap.aii.af.svc.facade</loader-name>
+    </loader-references>
+</connector-j2ee-engine>

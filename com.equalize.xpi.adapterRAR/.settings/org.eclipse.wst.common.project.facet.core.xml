@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<faceted-project>
+  <runtime name="sapruntime"/>
+  <fixed facet="jst.java"/>
+  <fixed facet="jst.connector"/>
+  <installed facet="jst.java" version="6.0"/>
+  <installed facet="jst.connector" version="1.5"/>
+  <installed facet="jst.ext.ra" version="1.5"/>
+</faceted-project>

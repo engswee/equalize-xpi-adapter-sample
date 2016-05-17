@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+sap-changelistnumber: 525473
+Implementation-Vendor: SAP
+Implementation-Title: com.sap.aii.adapter.sample.ra
+Implementation-Version: 7.4008.20141119101138.0000
+Implementation-Vendor-Id: sap.com
+Specification-Vendor: SAP AG
+sap-perforceserver: perforce3007.wdf.sap.corp:3007
+sourcelocation: perforce\://perforce3007.wdf.sap.corp\:3007/tc/xpi.ext
+ ernal/NW731EXT_13_REL
+Specification-Title: XPI Resource Adapter
+Specification-Version: 7.1.0
+

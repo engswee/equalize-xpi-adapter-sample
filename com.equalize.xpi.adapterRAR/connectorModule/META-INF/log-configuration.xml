@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log-configuration SYSTEM "log-configuration.dtd">
+<log-configuration>
+
+	<log-formatters>
+		<!-- This formatter produces human readable messages. -->
+		<log-formatter name="trc" pattern="%26d %150l [%t] %10s: %m" type="TraceFormatter"/>
+	</log-formatters>
+	
+	<log-destinations>
+		<!-- Destination for Trace Information of this ra com.equalize.xpi.adapter.ra -->
+		<log-destination count="5" effective-severity="DEBUG" limit="2000000" name="equalize_ra.trc" 
+			pattern="./log/applications/com.equalize.xpi.adapter.ra/default.trc" type="FileLog">
+			<formatter-ref name="trc"/>
+		</log-destination>
+	</log-destinations>
+
+	<log-controllers>
+		<!-- Trace Location com.equalize.xpi.adapter.ra -->
+		<log-controller name="com.equalize.xpi.adapter.ra" effective-severity="ERROR">
+			<associated-destinations>
+				<destination-ref association-type="LOG" name="equalize_ra.trc"/>
+			</associated-destinations>
+		</log-controller>
+		<!-- Logging Category: none, we use the default XILog -->
+	</log-controllers>
+
+</log-configuration>

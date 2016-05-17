@@ -1,0 +1,48 @@
+perforceserver: perforce3007.wdf.sap.corp:3007
+deployfile: single-module-dd.xml
+changelistnumber: 525473
+Manifest-Version: 1.0
+keylocation: SAP AG
+JarSAP-Standalone-Version: 20081017.1000
+SDM-SDA-Comp-Version: 1
+keyvendor: equalize.com
+projectname: xpi.external
+softwaretype: single-module
+keyname: com.equalize.xpi.adapter.ra
+Ext-SDM-SDA-Comp-Version: 1
+refactoringfile: empty
+docfile: buildinfo.xml
+csncomponent: BC-XI-CON-AFW
+compress: true
+keycounter: 7.4008.20141119101138.0000
+JarSAP-Version: 20081017.1000
+componentelement: <componentelement  name="com.equalize.xpi.adapter.ra" vendor="equalize.co
+ m" componenttype="DC" subsystem="NO_SUBSYS" location="SAP AG" counter=
+ "7.4008.20141119101138.0000" scvendor="sap.com" scname="SAP_XIAF" delt
+ aversion="F" updateversion="FB-20141120120042" componentprovider="SAP 
+ AG" servertype="P4" sourceserver="perforce3007.wdf.sap.corp:3007" chan
+ genumber="525473" projectname="xpi.external"/> 
+JarSAPProcessing-Version: 20081017.1000
+dependencylist: <dependency  keyname="engine.j2ee14.facade" keyvendor="sap.com" /> <de
+ pendency  keyname="engine.security.facade" keyvendor="sap.com" /> <dep
+ endency  keyname="engine.service.facade" keyvendor="sap.com" /> <depen
+ dency  keyname="engine.application.facade" keyvendor="sap.com" /> <dep
+ endency  keyname="com.sap.base.technology.facade" keyvendor="sap.com" 
+ /> <dependency  keyname="com.sap.aii.af.svc.facade" keyvendor="sap.com
+ " /> <dependency  keyname="com.sap.aii.af.lib.facade" keyvendor="sap.c
+ om" /> <dependency  keyname="com.sap.aii.af.ifc.facade" keyvendor="sap
+ .com" /> 
+dependencies: <dependency  Implementation-Title="engine.j2ee14.facade" Implementatio
+ n-Vendor-Id="sap.com" /> <dependency  Implementation-Title="engine.sec
+ urity.facade" Implementation-Vendor-Id="sap.com" /> <dependency  Imple
+ mentation-Title="engine.service.facade" Implementation-Vendor-Id="sap.
+ com" /> <dependency  Implementation-Title="engine.application.facade" 
+ Implementation-Vendor-Id="sap.com" /> <dependency  Implementation-Titl
+ e="com.sap.base.technology.facade" Implementation-Vendor-Id="sap.com" 
+ /> <dependency  Implementation-Title="com.sap.aii.af.svc.facade" Imple
+ mentation-Vendor-Id="sap.com" /> <dependency  Implementation-Title="co
+ m.sap.aii.af.lib.facade" Implementation-Vendor-Id="sap.com" /> <depend
+ ency  Implementation-Title="com.sap.aii.af.ifc.facade" Implementation-
+ Vendor-Id="sap.com" /> 
+JarSL-Version: 20081017.1000
+
