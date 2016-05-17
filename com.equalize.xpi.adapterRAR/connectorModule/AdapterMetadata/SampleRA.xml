@@ -171,7 +171,7 @@
           <ModuleConfigItem>
             <Key>exit</Key>
             <Name>JNDIName</Name>
-            <Value>deployedAdapters/com.sap.aii.adapter.sample.ra/shareable/com.sap.aii.adapter.sample.ra</Value>
+            <Value>deployedAdapters/com.equalize.xpi.adapter/shareable/com.equalize.xpi.adapter</Value>
           </ModuleConfigItem>
           <ModuleConfigItem>
             <Key>exit</Key>
