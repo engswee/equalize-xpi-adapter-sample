@@ -46,16 +46,16 @@ public class SPIManagedConnection implements ManagedConnection {
     private boolean supportsLocalTx;
     private boolean destroyed;
     private Set connectionSet;  // Multiple CCI connections can operate on one managed connection. Stored in this connectionSet
-	private FileOutputStream physicalConnection; // File representing the physical connection
-	private String outFileNamePrefix = null;     // Prefix of this file
+	//private FileOutputStream physicalConnection; // File representing the physical connection
+	//private String outFileNamePrefix = null;     // Prefix of this file
 	private String channelID = null;     		 // Corresponding XI channel ID
 	private Channel channel = null;     		 // Corresponding XI channel as CPA object
-	private String fileMode = null;     		 // File process mode (new, replace)
-	private String directory = null;     		 // output file directory
-	private String prefix = null;     		 	 // output file name starts with this string
-	private File outFile = null;                 // The one and only file if file mode = "replace"
-	private boolean asmaGet = false;			 // True if the adapter specific message property must be read
-	private boolean asmaError = false;			 // True if an error must be thrown when the ASMA is not set
+	//private String fileMode = null;     		 // File process mode (new, replace)
+	//private String directory = null;     		 // output file directory
+	//private String prefix = null;     		 	 // output file name starts with this string
+	//private File outFile = null;                 // The one and only file if file mode = "replace"
+	//private boolean asmaGet = false;			 // True if the adapter specific message property must be read
+	//private boolean asmaError = false;			 // True if an error must be thrown when the ASMA is not set
 
     /** @link dependency
      * @stereotype instantiate*/
@@ -82,7 +82,7 @@ public class SPIManagedConnection implements ManagedConnection {
 	 */
 	SPIManagedConnection(SPIManagedConnectionFactory mcf, PasswordCredential credential, boolean supportsLocalTx, String channelID, Channel channel) throws ResourceException, NotSupportedException {
 		final String SIGNATURE = "SpiManagedConnection(ManagedConnectionFactory mcf, PasswordCredential credential, boolean supportsLocalTx, String channelID)";
-		TRACE.entering(SIGNATURE, new Object[] {mcf, credential, new Boolean(supportsLocalTx), channelID, fileMode});
+		//TRACE.entering(SIGNATURE, new Object[] {mcf, credential, new Boolean(supportsLocalTx), channelID, fileMode});
 		String outFileName = "(not set)";
 		String privKeyView= null;
 		String privKeyAlias= null;
@@ -98,7 +98,13 @@ public class SPIManagedConnection implements ManagedConnection {
 
         connectionSet = new HashSet();
         cciListener = new XIConnectionEventListenerManager(this);
-
+        try {
+        	String xpath = channel.getValueAsString("xpathToFile");
+        } catch(Exception e) {
+			TRACE.catching(SIGNATURE, e);
+			TRACE.errorT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Cannot access the channel parameters of channel: " + channelID + ". Defaults will be set.");
+		}
+/*
 		// Determine the channel settings from the CPA channel object
 		try {
 			directory = channel.getValueAsString("fileOutDir");
@@ -180,54 +186,11 @@ public class SPIManagedConnection implements ManagedConnection {
         }
 		TRACE.infoT(SIGNATURE, XIAdapterCategories.CONNECT, "Physical connection, the file, was opened sucessfuly. Filename: " + outFileName + ".Filemode: " + fileMode);
 		TRACE.exiting(SIGNATURE);
+		*/
     }
-
-	/**
-	 * Returns access to the physical connection, i.e. the file, for the <code>CciInteraction</code> implementation.
-	 * It allows <code>CciInteraction</code> to dump the XI message into this file.
-	 *
-	 * (ra implementation specific)
-	 *
-	 * @return FileOutputStream access to the file representing the physical connection of this managed connection. May be null in case of errors
-	 */
-	FileOutputStream getOutFile() {
-		final String SIGNATURE = "getOutFile()";
-		TRACE.entering(SIGNATURE);
-		if (0 == fileMode.compareToIgnoreCase(SPIManagedConnectionFactory.FM_REPLACE)) {
-			try {
-				outFile.delete();
-				outFile.createNewFile();
-				physicalConnection = new FileOutputStream(outFile);
-			} catch(Exception e) {
-				TRACE.catching(SIGNATURE, e);
-				TRACE.errorT(SIGNATURE, XIAdapterCategories.CONNECT, "Error during reset of the output file. Filename: " + outFileNamePrefix);
-				return null;
-			}
-		}
-		TRACE.exiting(SIGNATURE);
-        return physicalConnection;
-    }
-
-	/**
-	 * Adapter specific message attribute switch getter
-	 *
-	 * (ra implementation specific)
-	 *
-	 * @return True if adapter specific message attribute must be evaluated
-	 */
-	boolean getAsmaGet() {
-		return asmaGet;
-	}
-
-	/**
-	 * Adapter specific message attribute switch error handling
-	 *
-	 * (ra implementation specific)
-	 *
-	 * @return True if an error must be thrown if the adapter specific message attribute is missing
-	 */
-	boolean getAsmaError() {
-		return asmaError;
+	
+	public Channel getChannel() {
+		return this.channel;
 	}
 
 	/**
@@ -355,7 +318,7 @@ public class SPIManagedConnection implements ManagedConnection {
 					cciCon.invalidate();
 				}
 				connectionSet.clear();
-				physicalConnection.close();
+				//physicalConnection.close();
 			} catch (Exception ex) {
 				TRACE.catching(SIGNATURE, ex);
 				throw new ResourceException(ex.getMessage());
@@ -387,7 +350,7 @@ public class SPIManagedConnection implements ManagedConnection {
             }
             connectionSet.clear();
 
-			if (0 == fileMode.compareToIgnoreCase(SPIManagedConnectionFactory.FM_REPLACE)) {
+/*			if (0 == fileMode.compareToIgnoreCase(SPIManagedConnectionFactory.FM_REPLACE)) {
 				// Do nothing: Keep the one and only file open. Old content will be deleted in the next interaction
 			}
 			else {
@@ -395,7 +358,7 @@ public class SPIManagedConnection implements ManagedConnection {
 				String outFileName = mcf.getOutFileName(outFileNamePrefix);
 				physicalConnection = new FileOutputStream(outFileName);
 				TRACE.infoT(SIGNATURE, XIAdapterCategories.CONNECT, "Physical connection was cleaned and a new file was opened sucessfuly. Filename: " + outFileName);
-			}
+			}*/
         } catch (Exception ex) {
 			TRACE.catching(SIGNATURE, ex);
             throw new ResourceException(ex.getMessage());

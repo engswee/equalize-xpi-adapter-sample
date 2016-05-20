@@ -4,7 +4,11 @@
 
 package com.equalize.xpi.adapter.ra;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
@@ -14,6 +18,8 @@ import javax.resource.cci.InteractionSpec;
 import javax.resource.cci.Record;
 import javax.resource.cci.ResourceWarning;
 
+import com.equalize.xpi.util.converter.ConversionDOMInput;
+import com.equalize.xpi.util.converter.Converter;
 import com.sap.engine.interfaces.messaging.api.Action;
 import com.sap.engine.interfaces.messaging.api.ErrorInfo;
 import com.sap.engine.interfaces.messaging.api.Message;
@@ -205,7 +211,7 @@ public class CCIInteraction implements XIInteraction {
 			TRACE.throwing(SIGNATURE, re);
 			throw re;
 		}
-		
+/*		
 		XIInteractionSpec XIIspec = (XIInteractionSpec)ispec;
 		String method = XIIspec.getFunctionName();
 
@@ -218,10 +224,54 @@ public class CCIInteraction implements XIInteraction {
 			ResourceException re = new ResourceException("Unknown function name in ispec: " + method); 
 			TRACE.throwing(SIGNATURE, re);
 			throw re;
-		}
-
+		}*/
+		output = retrieveFile(ispec, input, this.mc);
+		
 		TRACE.exiting(SIGNATURE);
         return output;
+    }
+    
+    private Record retrieveFile (InteractionSpec ispec, Record input, SPIManagedConnection mc) throws ResourceException {
+
+   		Message msg = ((XIMessageRecord) input).getXIMessage();
+   		MessageKey amk = new MessageKey(msg.getMessageId(), MessageDirection.INBOUND);
+       	try {
+       		// Parse the XML input using DOM and evaluate the XPath expression
+    		ConversionDOMInput domIn = new ConversionDOMInput(msg.getDocument().getText());
+    		String xpathToFile = mc.getChannel().getValueAsString("xpathToFile");    		
+    		String inFile = domIn.evaluateXPathToString(xpathToFile);
+    		this.audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "XPath expression: " + xpathToFile);
+    		this.audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "XPath expression value: " + inFile);
+    		
+    		// Retrieve the file contents
+    		InputStream inpStr = new FileInputStream(new File(inFile));
+    		ByteArrayOutputStream baos = Converter.toBAOS(inpStr);	
+
+    		// Create response XI message
+    		this.audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "File retrieved, constructing response message");
+    		XIMessageRecordImpl output = new XIMessageRecordImpl(msg.getToParty(),msg.getFromParty(),
+											    				msg.getToService(), msg.getFromService(),
+											    				msg.getAction());
+    		Message response = output.getXIMessage();
+
+    		// Populate payload and attributes of response message
+    		XMLPayload payload = response.createXMLPayload();
+    		payload.setContent(baos.toByteArray());
+    		payload.setName("MainDocument");
+    		payload.setDescription("EQ Adapter Synchronous Response");
+    		payload.setContentType("application/xml");
+
+    		response.setDocument(payload);
+    		response.setRefToMessageId(msg.getMessageId());	
+    		this.audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "Response message construction completed");
+    		return (Record) output;
+    		
+    	} catch (Exception e) {
+    		this.audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, e.getMessage());
+    		ResourceException re = new ResourceException(e.getMessage()); 
+			TRACE.throwing("retrieveFile (InteractionSpec ispec, Record input, SPIManagedConnection mc)", re);
+			throw re;
+    	}
     }
 
 	/**
@@ -243,198 +293,6 @@ public class CCIInteraction implements XIInteraction {
     public void clearWarnings() throws ResourceException {    
     }
 
-	/**
-	 * Execute the send interaction.
- 	 * (ra implementation specific)
-	 *
-	 * @param ispec		CciInteractionSpec which describes the interaction
-	 * @param input		The XI message to be send asynchronously 
-	 * @param mc		Related managed connection 
-	 * @return			The output XI message, always null since send is asynchronous 
-	 * @throws ResourceException	Thrown if message cannot be processed
-	 */
-	private Record send(InteractionSpec ispec, Record input, SPIManagedConnection mc) throws ResourceException {
-		final String SIGNATURE = "send(InteractionSpec ispec, Record input, SpiManagedConnection mc)";
-		TRACE.entering(SIGNATURE, new Object[] {ispec, input, mc});
-
-		Record output = null;
-		// Get output file from mc
-		FileOutputStream file = mc.getOutFile();
-
-		if (file == null) {
-			ResourceException re = new ResourceException("No related file stream resource in managed connection (file is null)."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		OutputStreamWriter fWriter = new OutputStreamWriter(file);
-
-		// Check input parameters
-		if (input == null) {
-			ResourceException re = new ResourceException("Input record is null."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		if (!(input instanceof XIMessageRecord)) {
-			ResourceException re = new ResourceException("Input record is not instance of Message."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		// Write the payload of the received XI message object into a file
-		Message msg = ((XIMessageRecordImpl) input).getXIMessage();
-
-		// Prepare audit log entry
-		MessageKey amk = new MessageKey(msg.getMessageId(), MessageDirection.INBOUND);
-
-		// CS_GETASMA START
-		// Starting with SP15 XI supports adapter specific message attributes (ASMA)
-		// With that an adapter can set arbitrary string attributes in the XI message header.
-		// ASMAs are declared in the adapter meta data and are evaluated by other XI components such
-		// as routing (receiver determination), mapping, BPE and other adapters.
-		// ASMAs of different adapters are differentiated by namespaces.
-		// Please note that the channel settings regarding the ASMA handling is done for all SAP adapters in the same way. 
-		// Probably it makes sense if other adapters allow to switch it on/off/error, too.
-		if (mc.getAsmaGet()) {
-			String value = msg.getMessageProperty(mcf.getAdapterNamespace() + "/" + mcf.getAdapterType(), SPIManagedConnectionFactory.ASMA_NAME);
-			if (value != null)
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Detected ASMA {0} with value: {1}", 
-					new Object[] {SPIManagedConnectionFactory.ASMA_NAME, value});
-			else {
-				if (mc.getAsmaError()) {
-					TRACE.errorT(SIGNATURE, XIAdapterCategories.CONNECT, "ASMA {0} not found in the current message. Channel is configured to throw an error in this case.", new Object[] {SPIManagedConnectionFactory.ASMA_NAME});
-					XIAdapterException de = new XIAdapterException("ASMA not found in the current message. Channel is configured to throw an error in this case.");
-					audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, "ASMA not found in the current message. Channel is configured to throw an error in this case.");
-					audit.flushAuditLogEntries(amk);
-					throw de;
-				}
-				else
-					TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "ASMA {0} not found in the current message. Channel is configured to continue the processing.", new Object[] {SPIManagedConnectionFactory.ASMA_NAME});
-			}
-		}
-		else
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "ASMA are switched off for this channel.");
-		// How the received value is used in adapters is totally adapter specific as the name ASMA indicates.
-		// CS_GETASMA END
-
-		// Execute the header mapping. The XI header mapping is used for receiver channels (XI->adapter) only.
-		// Usually it is needed for B2B scenarios only. Especially in case of SAP IDoc the sender party is set by the XI IS
-		// via the header mapping. First lookup the binding (=receiver agreement):
-		String[] result = getMappedHeaderFieldsAndNormalize(mc.getChannelID(), msg);
-		String fromParty = result[0];
-		String fromService = result[1];
-		String toParty = result[2];
-		String toService = result[3];
-
-		// Simulate errors: If the application payload contains the 
-		// <DeliveryException/> tag then a XI AF CCI DeliverableException is raised
-		// that prevents the XI AF MS retry. If <RecoverableException/> is found
-		// the retry-able RecoverableException is raised.
-
-		Payload appPayLoad = msg.getDocument();
-		String payText = new String(appPayLoad.getContent()); //Sample assumes that payload is textual
-		if (payText.indexOf("<DeliveryException>") != -1) {
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Payload contains the <DeliverableException> tag that causes a XIDeliveryException for testing purposes!");
-			XIAdapterException de = new XIAdapterException("XI AF JCA sample ra cannot deliver the message (test)");
-			audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, "Payload contains the <DeliverableException> tag that causes a XIDeliveryException for testing purposes!");
-			audit.flushAuditLogEntries(amk);
-			TRACE.throwing(SIGNATURE, de);
-			throw de;
-		}	 			
-		if (payText.indexOf("<RecoverableException>") != -1) {
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Payload contains the <RecoverableException> tag that causes a XIRecoverableException for testing purposes!");
-			XIAdapterException re = new XIAdapterException("XI AF JCA sample ra cannot temporarily deliver the message (test)");
-			audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, "Payload contains the <RecoverableException> tag that causes a XIRecoverableException for testing purposes!");
-			audit.flushAuditLogEntries(amk);
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}	 			
-
-		// Illustrate the usage of fatal traces. It is not done in traceSample() anymore to avoid confusion in real customer solutions 
-		if (payText.indexOf("<FatalTraceOn>") != -1) {
-			TRACE.fatalT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Ignore this and the following trace messages in the method send(). It is just a sample for using the trace API!");
-			// A fatal trace message with signature, category and text
-			TRACE.fatalT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "A fatal trace message with signature, category and text");
-			// A fatal trace message with signature, category, text and parameters
-			TRACE.fatalT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "A fatal trace message with signature, category, text and {0}.", new Object[] {"parameters"});
-			// A fatal trace message with signature and text only
-			TRACE.fatalT(SIGNATURE, "A fatal trace message with signature and text only");
-			// A fatal trace message with signature, text and parameters
-			TRACE.fatalT(SIGNATURE, "A fatal trace message with signature, text and {0}", new Object[] {"parameters"});
-		}	 			
-
-		String newMsgIndicator = new String ("***** Start of async. message *****");
-
-		try {
-			PrintWriter printWriter = new PrintWriter(fWriter);
-			printWriter.println(newMsgIndicator);
-			printWriter.println("From (P/S): " + fromParty + "/" + fromService);
-			printWriter.println("To (P/S): " + toParty + "/" + toService);
-			printWriter.println("Payload: ");
-			printWriter.println(payText);
-			fWriter.flush();
-
-			// For EO check it may sensible to store the message ID map like this:			
-			// Access the XI AF message ID mapper singleton
-			MessageIDMapper messageIDMapper = MessageIDMapper.getInstance();
-			// Create a message ID map (format of external message ID depends on the external protocol; for demo purposes the file name and date is taken here)
-			String extMsgId = "JCASample" + String.valueOf((long)file.getFD().hashCode());
-			messageIDMapper.createIDMap(msg.getMessageId(), extMsgId, System.currentTimeMillis() + 1000*60*60*24, false);
-			// You can lookup the message maps as follows:
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Lookup of {0} returns: {1}", 
-				new Object[] {msg.getMessageId(), messageIDMapper.getMappedId(msg.getMessageId())});
-			// Important: This lookup won't work. If you need a bidirectional lookup you must create a second mirrored ID map
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Lookup of {0} returns: {1}", 
-				new Object[] {extMsgId, messageIDMapper.getMappedId(extMsgId)});
-			// And the map can be removed programatically as well
-			messageIDMapper.remove(msg.getMessageId());
-		} catch (Exception e) {
-			TRACE.catching(SIGNATURE, e);
-			XIAdapterException de = new XIAdapterException("System error: " + e.getMessage());
-			audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, "Unable to write message into file.");
-			audit.flushAuditLogEntries(amk);
-			TRACE.throwing(SIGNATURE, de);
-			throw de;
-		}
-				
-		audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "Async. message was forwarded succesfully to the file system");
-		audit.flushAuditLogEntries(amk);
-
-		// CS_ACKNS START
-		// Publish that the this JCA sample does not support application ACKs
-		// Note: Ack handling must be done for asynchronous messages only
-		// The AF manages whether Acks must be sent back to the XI IS or not
-		// i.e. whether they were requested or not
-		// The mf.ackNotSupported() should be called at the end of the message processing to avoid a conflict
-		// with error delivery acks that will be generated by the XI AF when an exception has occured
-		MessageKey msgKey = msg.getMessageKey();
-		TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Message key {0} with this data received: ID: {1} Direction: {2}", 
-				new Object[] {msgKey.toString(), msgKey.getMessageId(), msgKey.getDirection().toString()});
-		if (payText.indexOf("<AppAckOn>") == -1) {
-			try {
-				AckType[] notSupportedAcks = {AckType.APPLICATION, AckType.APPLICATION_ERROR};
-				mf.ackNotSupported(msgKey, notSupportedAcks);
-			}
-			catch (Exception e) {
-				TRACE.catching(SIGNATURE, e);
-				TRACE.warningT(SIGNATURE, XIAdapterCategories.CONNECT, "Not supported Acks cannot be published!");
-			}
-		} else {
-			mf.applicationAck(msgKey);
-		}
-		// CS_ACKNS END
-
-		// CS_ACKDEL START
-		// Send a delivery ACK back. A delivery error ACK is created by the AF based
-		// on the thrown exceptions if they occur (see throws above). Hence an adapter must not call
-		// mf.deliveryErrorAck() within the messaging processing but may call it later asynchronously
-		mf.deliveryAck(msgKey);
-		// CS_ACKDEL END
-
- 	    TRACE.exiting(SIGNATURE);
-		return output;
-	}
 	/**
 	 * <code>getMappedHeaderFieldsAndNormalize()</code> demonstrates the usage of the
 	 * XI header mapping in combination with the XI address normalization feature.
@@ -722,206 +580,6 @@ public class CCIInteraction implements XIInteraction {
 		// CS_BINDING END
 
 		TRACE.exiting(SIGNATURE);
-	}
-
-	/**
-	 * Execute the call interaction.
-	 * (ra implementation specific)
-	 *
-	 * @param ispec		CciInteractionSpec which describes the interaction
-	 * @param input		The XI message to be send asynchronously 
-	 * @param mc		Related managed connection 
-	 * @return			The output XI message, must not be null since a response is expected 
-	 * @throws ResourceException	Thrown if message cannot be processed
-	 */
-	private Record call(InteractionSpec ispec, Record input, SPIManagedConnection mc) throws ResourceException {
-		final String SIGNATURE = "call(InteractionSpec ispec, Record input, SpiManagedConnection mc)";
-		TRACE.entering(SIGNATURE);
-		// Get output file from mc
-		FileOutputStream file = mc.getOutFile();
-		XIMessageRecordImpl output = null;
-
-		if (file == null) {
-			ResourceException re = new ResourceException("No related file stream resource in managed connection (file is null)."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		OutputStreamWriter fWriter = new OutputStreamWriter(file);
-
-		// Check input parameters
-		if (input == null) {
-			ResourceException re = new ResourceException("Input record is null."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		if (!(input instanceof XIMessageRecord)) {
-			ResourceException re = new ResourceException("Input record is not instance of Message."); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-
-		// Write the payload of the received XI message object into a file
-		Message msg = ((XIMessageRecord) input).getXIMessage();
-
-		// Prepare audit log entry
-		MessageKey amk = new MessageKey(msg.getMessageId(), MessageDirection.INBOUND);
-
-		// Execute the header mapping. The XI header mapping is used for receiver channels (XI->adapter) only.
-		// Usually it is needed for B2B scenarios only. Especially in case of SAP IDoc the sender party is set by the XI IS
-		// via the header mapping. First lookup the binding (=receiver agreement):
-		String[] result = getMappedHeaderFieldsAndNormalize(mc.getChannelID(), msg);
-		String fromParty = result[0];
-		String fromService = result[1];
-		String toParty = result[2];
-		String toService = result[3];
-
-		Payload appPayLoad = msg.getDocument();
-		String payText = new String(appPayLoad.getContent());
-		String newMsgIndicator = new String ("***** Start of sync. message *****");
-
-		try {
-			PrintWriter printWriter = new PrintWriter(fWriter);
-			printWriter.println(newMsgIndicator);
-			printWriter.println("From (P/S): " + fromParty + "/" + fromService);
-			printWriter.println("To (P/S): " + toParty + "/" + toService);
-			printWriter.println("Payload: ");
-			printWriter.println(payText);
-			fWriter.flush();
-		} catch (Exception e) {
-			TRACE.catching(SIGNATURE, e);
-			ResourceException re = new ResourceException("System error: " + e.getMessage()); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-		
-		try {
-			TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Create synchronous response." );
-
-			// Two cases of application responses are possible: 
-			// a) The sync request was processed succesfully => return response
-			// b) "" not succesfully => return an error structure and use an error interface
-			// This interface should not be identical with the response interface to allow a specific mapping on an error structure
-			// The interface name should be configurable in the channel
-			
-			// Case a) positive response (request does not contain the <ApplicationError> switch) 
-			// CS_SYNCRESP START
-			if (payText.indexOf("<ApplicationError>") == -1) {
-				// In case of succesful synchronous communication create an AppResponse with mirrored addresses and set RefToMessageId 
-				output = new XIMessageRecordImpl(msg.getToParty(),msg.getFromParty(),
-												 msg.getToService(), msg.getFromService(),
-												 msg.getAction());
-	
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Retrieve XI message from output: " + output.toString());
-				Message response = output.getXIMessage();
-
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Create payload of synchronous response: " + response.toString());
-				XMLPayload xp = response.createXMLPayload();
-
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Fill payload of synchronous response: " + xp.toString());
-				xp.setText("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response>OK</Response>");
-				xp.setName("MainDocument");
-				xp.setDescription("XI AF Sample Adapter Sync Response");
-				xp.setContentType("application/xml");
-
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Set payload of synchronous response." );
-				response.setDocument(xp);
-				String requestId = msg.getMessageId();
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Set RefToMsgId of synchronous response to: " + requestId);
-				response.setRefToMessageId(requestId);
-
-				// Write audit log entry
-				// Audit log entries for synchronous messages can be displayed as long as the related synchronous messages
-				// are available in the memory and might help to identify problems. Hence it makes sense to write them.
-				// In contrast to asynchronous messages a flush() must not be called, see below.
-				audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "Sync. message was forwarded succesfully to the file system");
-				// Do not call the audit flush for synchronous messages since synchronous messages won't be persisted
-				// => The audit log entries will point to non-existing messages when the sychronous message is removed
-				// from the memory heap. 
-				// Wrong: audit.flushAuditLogEntries(amk);
-
-			// CS_SYNCRESP END
-			// CS_SYNCAPPERR START
-			// Case b) application error response 
-			} else {	 			
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT, "Payload contains the <ApplicationError> tag that causes a application error response for testing purposes!");
-				audit.addAuditLogEntry(amk, AuditLogStatus.ERROR, "Simulate application error response now.");
-				// In case of errornous synchronous communication create an AppResponse with mirrored addresses,set RefToMessageId and fault interface (action) 
-				String[] faultIF = getFaultIF(mc.getChannelID());
-				Action action = new Action(faultIF[0], faultIF[1]);
-				output = new XIMessageRecordImpl(msg.getToParty(),msg.getFromParty(),
-												 msg.getToService(), msg.getFromService(),
-												 action);
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Retrieve XI message from output: " + output.toString());
-				Message response = output.getXIMessage();
-
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Create payload of synchronous error response: " + response.toString());
-
-				XMLPayload xp = response.createXMLPayload();
-				xp.setName("MainDocument");
-				xp.setDescription("XI AF Sample Adapter Sync Error Response");
-
-				// The following section demonstrates different ways to enrich the ApplicationError with payloads and attachments.
-				// Please note!: It is not defined how the sender of the sync request evaluates the payload/attachments of an ApplicationError.
-				// Generally it can only be expected that the sender expects a XML payload without attachments. The mapping of an AplicationError
-				// XML payload can be modeled separately from a usual application response payload mapping by specifing the fault message type in the
-				// interface specification in the IR
-				if (payText.indexOf("ApplicationErrorBinaryPayload") != -1) {
-					TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Fill binary payload of synchronous ApplicationError response");
-					xp.setContent(new byte[] {48,49,50,51,52,53,54,55,56,57});
-					xp.setContentType("application/octet-stream");				
-				}
-				else if (payText.indexOf("ApplicationErrorTextPayload") != -1) {
-					TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Fill text payload of synchronous ApplicationError response");
-					xp.setText("Error simulated, ApplicationError contains text payload only");
-					xp.setContentType("text/plain");				
-				}
-				else if (payText.indexOf("ApplicationErrorXMLPayloadWithAtt") != -1) {
-					TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Fill XML payload of synchronous ApplicationError response with binary attachment");
-					xp.setText("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Failure><Error>Error simulated, ApplicationError contains XML payload with binary attachment</Error></Failure>");
-					xp.setContentType("application/xml");
-					Payload p = response.createPayload();
-					p.setContent(new byte[] {48,49,50,51,52,53,54,55,56,57});
-					p.setContentType("application/octet-stream");				
-					p.setName("Attachment");
-					p.setDescription("XI AF Sample Adapter Sync Error Response binary attachment");
-					response.addAttachment(p);
-				}
-				else //All other = ApplicationErrorXMLPayload (recommended)
-				{
-					TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Fill XML payload of synchronous ApplicationError response");
-					xp.setText("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Failure><Error>Error simulated, ApplicationError contains XML payload only</Error></Failure>");
-					xp.setContentType("application/xml");
-				}
-
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Set payload of synchronous error response." );
-				response.setDocument(xp);
-
-				// Responses must set the RefToMessageID to the msg ID of the request it refers to
-				String requestId = msg.getMessageId();
-				TRACE.debugT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Set RefToMsgId of synchronous error response to: " + requestId);
-				response.setRefToMessageId(requestId);
-
-				// New with SP14: Set the ErrorInfo attributes to mark the response as ApplicationError message
-				ErrorInfo errorInfo = response.createErrorInfo();
-			    errorInfo.setAttribute("ErrorCode","SOME_APP_ERR_CODE");
-				errorInfo.setAttribute("ErrorArea","JCA");
-				errorInfo.setAttribute("ErrorCategory","Application");
-				errorInfo.setAttribute("AdditionalErrorText","MainDocument has contained the <ApplicationError> element that triggers the JCA adapter to create an app error response as demo!");
-				errorInfo.setAttribute("ApplicationFaultInterface", faultIF[0]);
-				errorInfo.setAttribute("ApplicationFaultInterfaceNamespace", faultIF[1]);
-				response.setErrorInfo(errorInfo);
-			}
-			// CS_SYNCAPPERR END
-		} catch (Exception e) {
-			TRACE.catching(SIGNATURE, e);
-			ResourceException re = new ResourceException("System error: " + e.getMessage()); 
-			TRACE.throwing(SIGNATURE, re);
-			throw re;
-		}
-		TRACE.exiting(SIGNATURE, output);
-		return (Record) output;
 	}
 
 	/**

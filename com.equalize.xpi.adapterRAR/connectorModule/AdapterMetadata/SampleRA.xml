@@ -27,138 +27,37 @@
   <Outbound>
 
     <!-- Transport protocol settings -->
-
-    <TransportProtocol>
-      <Name>File</Name>
-      <!-- Note: If you increase the version number below then transport protocol data of
-           older channels cannot read anymore. I.e. You have to provide the old and new
-           version to be compatible- -->
-      <Version>7.1.0</Version>
+	<TransportProtocol>
+      <Name>NFS</Name>
       <GuiLabels>
-        <Label language="EN">File System</Label>
+        <Label language="EN">Local File System</Label>
       </GuiLabels>
       <ValidMessageProtocols>
         <ProtocolIdentifier>
-          <Name>JCA10</Name>
-          <Version>7.1.0</Version>
+          <Name>SyncGet</Name>
+		  <Version></Version>
         </ProtocolIdentifier>
       </ValidMessageProtocols>
-
       <ChannelAttributes>
         <AttributeGroup>
           <Name>outboundParameters</Name>
           <GuiLabels>
-            <Label language="EN">File System Access Parameters</Label>
+            <Label language="EN">File Retrieval Parameters</Label>
           </GuiLabels>
           <AttributeReference>
-            <ReferenceName>fileOutDir</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>fileOutPrefix</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>fileMode</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>faultInterface</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>faultInterfaceNamespace</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>raiseError</ReferenceName>
-          </AttributeReference>
-        </AttributeGroup>
-
-        <AttributeGroup>
-          <Name>sampleParameters</Name>
-          <GuiLabels>
-            <Label language="EN">Sample Channel Parameters (not used, just for demo)</Label>
-          </GuiLabels>
-          <AttributeReference>
-            <ReferenceName>sampleString</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>samplePassword</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBoolean</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleLong</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleInteger</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleTable</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBinary</ReferenceName>
+            <ReferenceName>xpathToFile</ReferenceName>
           </AttributeReference>
         </AttributeGroup>
       </ChannelAttributes>
-
-      <SecurityAttributes>
-        <AttributeGroup>
-          <Name>KeystoreAccess</Name>
-          <GuiLabels>
-            <Label language="EN">Select Certificates from Keystore</Label>
-          </GuiLabels>
-          <AttributeReference>
-            <ReferenceName>secViewPrivateKey</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>secAliasPrivateKey</ReferenceName>
-          </AttributeReference>
-        </AttributeGroup>
-      </SecurityAttributes>
     </TransportProtocol>
-
     <!-- Message protocol settings -->
 
     <MessageProtocol>
-      <Name>JCA10</Name>
-      <Version>7.1.0</Version>
+      <Name>SyncGet</Name>
+	  <Version></Version>
       <GuiLabels>
-        <Label language="EN">JCA 1.0</Label>
+        <Label language="EN">Synchronous File Retrieval</Label>
       </GuiLabels>
-      <SecurityAttributes>
-        <AttributeGroup>
-          <Name>sampleParameters</Name>
-          <GuiLabels>
-            <Label language="EN">Sample Security (Agreement) Parameters (not used, just for demo)</Label>
-          </GuiLabels>
-          <AttributeReference>
-            <ReferenceName>sampleString</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>samplePassword</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBoolean</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleLong</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleInteger</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleTable</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBinary</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleViewPublicKey</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleAliasPublicKey</ReferenceName>
-          </AttributeReference>
-        </AttributeGroup>
-      </SecurityAttributes>
-
       <ModuleProcessorAttributes>
         <ModuleSequence>
           <ModuleSequenceItem>
@@ -172,16 +71,6 @@
             <Key>exit</Key>
             <Name>JNDIName</Name>
             <Value>deployedAdapters/com.equalize.xpi.adapter/shareable/com.equalize.xpi.adapter</Value>
-          </ModuleConfigItem>
-          <ModuleConfigItem>
-            <Key>exit</Key>
-            <Name>userName</Name>
-            <Value>Administrator</Value>
-          </ModuleConfigItem>
-          <ModuleConfigItem>
-            <Key>exit</Key>
-            <Name>pwd</Name>
-            <Value>sapsap</Value>
           </ModuleConfigItem>
         </ModuleConfig>
       </ModuleProcessorAttributes>
@@ -582,6 +471,16 @@
     </FixedValue>
   </Attribute>
 
+  <Attribute>
+    <Name>xpathToFile</Name>
+    <Usage>required</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">XPath expression of payload containing full path to file</Label>
+    </GuiLabels>
+  </Attribute>
+  
   <Attribute>
     <Name>fileOutDir</Name>
     <Flag>nonTransportable</Flag>

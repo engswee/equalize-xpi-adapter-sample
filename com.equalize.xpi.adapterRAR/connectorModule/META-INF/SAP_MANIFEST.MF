@@ -14,11 +14,11 @@ refactoringfile: empty
 docfile: buildinfo.xml
 csncomponent: BC-XI-CON-AFW
 compress: true
-keycounter: 7.4008.20141119101138.0000
+keycounter: 1.0.0
 JarSAP-Version: 20081017.1000
 componentelement: <componentelement  name="com.equalize.xpi.adapter.ra" vendor="equalize.co
  m" componenttype="DC" subsystem="NO_SUBSYS" location="SAP AG" counter=
- "7.4008.20141119101138.0000" scvendor="sap.com" scname="SAP_XIAF" delt
+ "1.0.0" scvendor="sap.com" scname="SAP_XIAF" delt
  aversion="F" updateversion="FB-20141120120042" componentprovider="SAP 
  AG" servertype="P4" sourceserver="perforce3007.wdf.sap.corp:3007" chan
  genumber="525473" projectname="xpi.external"/> 

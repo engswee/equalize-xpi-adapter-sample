@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~bl~txmanagerimpl~plb~impl.jar"/>
 	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~bl~guidgenerator~impl.jar"/>
 	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~je~appcontext_api~API.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/com.equalize.xpi.util.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

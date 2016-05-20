@@ -117,8 +117,10 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 			else if (channel.getDirection() == Direction.OUTBOUND) {
 				outboundChannels.add(channel);
 				try {
-					dir = channel.getValueAsString("fileOutDir");
-					name = channel.getValueAsString("fileOutPrefix");
+					//dir = channel.getValueAsString("fileOutDir");
+					//name = channel.getValueAsString("fileOutPrefix");
+					dir = channel.getValueAsString("xpathToFile");
+					name = "";
 				}
 				catch (Exception e) {
 					TRACE.catching(SIGNATURE, e);
@@ -238,8 +240,10 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 					}
 					else if (channel.getDirection() == Direction.OUTBOUND) {
 						outboundChannels.add(channel);
-						dir = channel.getValueAsString("fileOutDir");
-						name = channel.getValueAsString("fileOutPrefix");
+						//dir = channel.getValueAsString("fileOutDir");
+						//name = channel.getValueAsString("fileOutPrefix");
+						dir = channel.getValueAsString("xpathToFile");
+						name = "";
 					}
 					else
 						continue;  //Ignore unknown direction channels
@@ -400,7 +404,13 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 					return cs;
 				}
 			} else {
-				String directory = channel.getValueAsString("fileOutDir");
+				String xpath = channel.getValueAsString("xpathToFile");
+				if ((xpath == null) || (xpath.length() == 0)) {
+					cs = csf.createChannelStatus(channel, ChannelState.ERROR, "XPath expression is not set.");
+					TRACE.exiting(SIGNATURE, new Object[] {cs});
+					return cs;
+				}	
+/*				String directory = channel.getValueAsString("fileOutDir");
 				if ((directory == null) || (directory.length() == 0)) {
 					cs = csf.createChannelStatus(channel, ChannelState.ERROR, "Output file directory name is not set.");
 					TRACE.exiting(SIGNATURE, new Object[] {cs});
@@ -413,7 +423,7 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 						TRACE.exiting(SIGNATURE, new Object[] {cs});
 						return cs;
 					}
-				}
+				}*/
 			}
 
 			// Channel is OK

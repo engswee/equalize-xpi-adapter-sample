@@ -3,19 +3,19 @@
 
   <connector>
     <display-name>
-      sample_ra
+      Equalize EQ RA
     </display-name>
     <vendor-name>
-      sap.com
+      equalize.com
     </vendor-name>
     <spec-version>
       1.0
     </spec-version>
     <eis-type>
-      XI AF Sample Resource Adapter
+      Equalize EQ Resource Adapter
     </eis-type>
     <version>
-      1.4
+      1.0.0
     </version>
     <resourceadapter>
       <managedconnectionfactory-class>
