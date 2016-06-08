@@ -106,8 +106,10 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 			if (channel.getDirection() == Direction.INBOUND) {
 				inboundChannels.add(channel);
 				try {
-					dir = channel.getValueAsString("fileInDir");
-					name = channel.getValueAsString("fileInName");
+					//dir = channel.getValueAsString("fileInDir");
+					//name = channel.getValueAsString("fileInName");
+					dir = channel.getValueAsString("urlEndpoint");
+					name = "";
 				}
 				catch (Exception e) {
 					TRACE.catching(SIGNATURE, e);
@@ -235,8 +237,10 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 					Channel channel = (Channel) allChannels.get(i);
 					if (channel.getDirection() == Direction.INBOUND) {
 						inboundChannels.add(channel);
-						dir = channel.getValueAsString("fileInDir");
-						name = channel.getValueAsString("fileInName");
+						//dir = channel.getValueAsString("fileInDir");
+						//name = channel.getValueAsString("fileInName");
+						dir = channel.getValueAsString("urlEndpoint");
+						name = "";
 					}
 					else if (channel.getDirection() == Direction.OUTBOUND) {
 						outboundChannels.add(channel);
@@ -379,7 +383,13 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 			// Check directory adapter status of channel is not done anymore since AAM start/stop with channelAdded/Deleted was introduced 
 
 			if (storedChannel.getDirection() == Direction.INBOUND) {
-				String directory = channel.getValueAsString("fileInDir");
+				String url = channel.getValueAsString("urlEndpoint");
+				if ((url == null) || (url.length() == 0)) {
+					cs = csf.createChannelStatus(channel, ChannelState.ERROR, "Target URL " + url + " does not exists.");
+					TRACE.exiting(SIGNATURE, new Object[] {cs});
+					return cs;
+				}	
+/*				String directory = channel.getValueAsString("fileInDir");
 				if ((directory == null) || (directory.length() == 0)) {
 					TRACE.warningT(SIGNATURE, XIAdapterCategories.CONFIG, "Unable to determine input file directory. Take default: " + SPIManagedConnectionFactory.IN_DIR);
 					directory = SPIManagedConnectionFactory.IN_DIR;
@@ -395,7 +405,7 @@ public class XIConfiguration implements ChannelLifecycleCallback, ChannelStatusC
 					cs = csf.createChannelStatus(channel, ChannelState.ERROR, "Input file directory " + directory + " does not exists.");
 					TRACE.exiting(SIGNATURE, new Object[] {cs});
 					return cs;
-				}
+				}*/
 			
 				// Check whether the mcf in principle is up and running (i.e. thread is running).
 				if (!mcf.isRunning()) {

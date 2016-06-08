@@ -15,7 +15,7 @@
       Equalize EQ Resource Adapter
     </eis-type>
     <version>
-      1.0.0
+      1.0.1
     </version>
     <resourceadapter>
       <managedconnectionfactory-class>

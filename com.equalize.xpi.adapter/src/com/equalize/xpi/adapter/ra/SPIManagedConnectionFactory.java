@@ -29,13 +29,20 @@ import javax.resource.spi.ManagedConnectionFactory;
 //import javax.resource.spi.ResourceAdapter;
 import javax.resource.spi.security.PasswordCredential;
 import javax.security.auth.Subject;
+import javax.xml.bind.DatatypeConverter;
 
+import com.equalize.xpi.util.converter.ConversionDOMInput;
 import com.sap.transaction.TxException;
 import com.sap.transaction.TxManager; 
 import com.sap.transaction.TransactionTicket;
 import com.sap.transaction.TxRollbackException;
 
 import com.sap.guid.GUID;
+import com.sap.httpclient.HostConfiguration;
+import com.sap.httpclient.HttpClient;
+import com.sap.httpclient.auth.AuthScope;
+import com.sap.httpclient.auth.UserPassCredentials;
+import com.sap.httpclient.http.methods.GET;
 
 import com.sap.engine.interfaces.connector.ManagedConnectionFactoryActivation; 
 
@@ -75,6 +82,7 @@ import com.sap.aii.af.service.administration.api.monitoring.ProcessContext;
 import com.sap.aii.af.service.administration.api.monitoring.ProcessContextFactory;
 import com.sap.aii.af.service.administration.api.monitoring.ChannelDirection;
 import com.sap.aii.af.service.administration.api.monitoring.ProcessState;
+
 
 /**
  * An object of the class <code>SpiManagedConnectionFactory</code> (MCF) is a factory of both,
@@ -909,7 +917,7 @@ public class SPIManagedConnectionFactory implements ManagedConnectionFactory, Se
 					 
 					for (int i = 0; i < channels.size(); i++) {
 						Channel channel = (Channel) channels.get(i);
-						try {
+						/*try {
 							
 							// The old "adapterStatus" check was removed with introduction of AAM which uses start/stop and channelAdded/Remove 
 							// to start and stop a channel
@@ -1019,7 +1027,21 @@ public class SPIManagedConnectionFactory implements ManagedConnectionFactory, Se
 							TRACE.catching(SIGNATURE, e);
 							TRACE.errorT(SIGNATURE, XIAdapterCategories.CONNECT_AF, "Cannot send message to channel {0}. Received exception: {1}", 
 							    new Object[] {channel.getObjectId(), e.getMessage()});
-						}
+						}*/
+						
+						// Retrieve the polling interval
+						int pollInterval = channel.getValueAsInt("pollInterval");
+						pollTime = pollInterval*1000;
+						// Update the channel processing status
+						MonitoringManager mm = MonitoringManagerFactory.getInstance().getMonitoringManager();
+						ProcessContext pc = ProcessContextFactory.getInstance().createProcessContext(ProcessContextFactory.getParamSet().channel(channel));
+						mm.reportProcessStatus(this.adapterNamespace, this.adapterType, ChannelDirection.SENDER , ProcessState.OK, "Start of processing", pc);
+						
+						// Execute channel processing
+						runChannel(channel);
+						// Update the channel processing status
+						mm.reportProcessStatus(this.adapterNamespace, this.adapterType, ChannelDirection.SENDER , ProcessState.OK, "End of processing", pc);
+						mm.reportProcessStatus(this.adapterNamespace, this.adapterType, ChannelDirection.SENDER , ProcessState.OK, "Next cycle in " + pollInterval + " seconds", pc);
 					}			
 				} catch (Exception e) {
 					TRACE.catching(SIGNATURE, e);
@@ -1046,7 +1068,151 @@ public class SPIManagedConnectionFactory implements ManagedConnectionFactory, Se
 			// CS_MCFTNAMERESET END
 		}
 	}
+	
+	private void runChannel(Channel channel) throws Exception {
+		// Retrieve the channel configuration values
+		String urlEndpoint = channel.getValueAsString("urlEndpoint");
+		boolean useProxy = channel.getValueAsBoolean("useProxy");
+		String proxyhost = channel.getValueAsString("proxyhost");
+		int proxyport = channel.getValueAsInt("proxyport");
+		String proxyuser = channel.getValueAsString("proxyuser");
+		String proxypwd = channel.getValueAsString("proxypwd");
+		String tokenEndpoint = channel.getValueAsString("tokenEndpoint");
+		String consumerKey = channel.getValueAsString("consumerKey");
+		String user = channel.getValueAsString("user");
+		String pwd = channel.getValueAsString("pwd");
+		
+		// Update channel processing status
+		MonitoringManager mm = MonitoringManagerFactory.getInstance().getMonitoringManager();
+		ProcessContext pc = ProcessContextFactory.getInstance().createProcessContext(ProcessContextFactory.getParamSet().channel(channel));
+		mm.reportProcessStatus(this.adapterNamespace, this.adapterType, ChannelDirection.SENDER , ProcessState.OK, "Polling endpoint: " + urlEndpoint, pc);
+		
+		// Execute the HTTP polling, then create & dispatch the message to the Adapter Framework
+		String output = execHTTPGet(tokenEndpoint, urlEndpoint, user, pwd, consumerKey, useProxy, proxyhost, proxyport, proxyuser, proxypwd);
+		createMessage(output.getBytes("UTF-8"), channel);		
+	}
+	
+	private String execHTTPGet(String tokenEndpoint, String urlEndpoint, String user, String pwd, 
+			String consumerKey, boolean useProxy, String proxyhost, int proxyport, 
+			String proxyuser, String proxypwd) throws Exception {
+		
+		HttpClient client = new HttpClient();
+		// Set proxy details
+		if(useProxy) {
+			HostConfiguration hostConfig = new HostConfiguration();
 
+			hostConfig.setProxy(proxyhost, proxyport);
+			client.setHostConfiguration(hostConfig);
+
+			AuthScope ourScope = new AuthScope(proxyhost, proxyport, "realm");
+			UserPassCredentials userPass = new UserPassCredentials(proxyuser, proxypwd);
+			client.getState().setCredentials(ourScope, userPass);
+		}
+		
+		// Retrieve the OAuth token from the token endpoint 
+		GET httpGet = new GET(tokenEndpoint);
+		String b64encodedLogin = DatatypeConverter.printBase64Binary((user + ":" + pwd).getBytes());
+		httpGet.setRequestHeader("Authorization", "Basic " + b64encodedLogin);
+		httpGet.setRequestHeader("X-ConsumerKey", consumerKey);
+		String token = null;
+		try {
+			client.executeMethod(httpGet);
+			// Parse the response and retrieve the value of the token
+			ConversionDOMInput domIn = new ConversionDOMInput(httpGet.getResponseBodyAsString());
+			token = domIn.evaluateXPathToString("/Access_Token/Token");
+		} finally {
+			httpGet.releaseConnection();
+		}
+		
+		// Execute the call to the target URL using the OAuth 2.0 token for authorization
+		GET httpGet2 = new GET(urlEndpoint);
+		httpGet2.setRequestHeader("Authorization", "OAuth " + token);
+		try {
+			client.executeMethod(httpGet2);
+			return httpGet2.getResponseBodyAsString();
+		} finally { 
+			httpGet2.releaseConnection();
+		}
+	}
+	
+	private void createMessage(byte[] content, Channel channel) {
+		try {
+			// Retrieve the binding details from the channel
+			Binding binding = CPAFactory.getInstance().getLookupManager().getBindingByChannelId(channel.getObjectId());
+			String action = binding.getActionName();
+			String actionNS = binding.getActionNamespace(); 
+			String fromParty = binding.getFromParty();
+			String fromService = binding.getFromService();
+			String toParty = binding.getToParty();
+			String toService = binding.getToService();
+
+			// Normalize wildcards and null's to "non-specified" address value
+			if ( (fromParty == null) || (fromParty.equals("*")) )
+				fromParty = new String("");
+			if ( (fromService == null) || (fromService.equals("*")) )
+				fromService = new String("");
+			if ( (toParty == null) || (toParty.equals("*")) )
+				toParty = new String("");
+			if ( (toService == null) || (toService.equals("*")) )
+				toService = new String("");
+			if ( (action == null) || (action.equals("*")) )
+				action = new String(""); 
+			if ( (actionNS == null) || (actionNS.equals("*")) )
+				actionNS = new String(""); 
+
+			// Create the XI message and populate the headers and content
+			if(this.mf == null) {
+				this.mf = new XIMessageFactoryImpl(channel.getAdapterType(), channel.getAdapterNamespace());
+			}
+			Message msg = this.mf.createMessageRecord(fromParty, toParty, fromService, toService, action, actionNS);
+			msg.setDeliverySemantics(DeliverySemantics.ExactlyOnce);
+
+			XMLPayload xp = msg.createXMLPayload();
+			xp.setContent(content);
+			xp.setContentType("application/xml");				
+			xp.setName("MainDocument");
+			xp.setDescription("EQ Adapter Polling Output");
+			msg.setDocument(xp);
+
+			// Set the message into the module for processing by the module processor
+			ModuleData md = new ModuleData();
+			md.setPrincipalData(msg);
+
+			TransactionTicket txTicket = null;
+			try {
+				txTicket = TxManager.required();
+
+				MessageKey amk = new MessageKey(msg.getMessageId(), MessageDirection.OUTBOUND);
+				md.setSupplementalData("audit.key", amk);
+				audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "Asynchronous message was polled and will be forwarded to the XI AF MS now.");
+				audit.addAuditLogEntry(amk, AuditLogStatus.SUCCESS, "Name of the polled URL: {0}.", new Object[] {channel.getValueAsString("urlEndpoint")});
+				audit.addAuditLogEntry(amk, AuditLogStatus.WARNING, "Demo: This is a warning audit log message");
+				// And flush them into the DB
+				audit.flushAuditLogEntries(amk);
+				
+				// Process the module
+				ModuleProcessorFactory.getModuleProcessor(true, 1, 1000).process(channel.getObjectId(), md);
+				// Update the channel status
+				MonitoringManager mm = MonitoringManagerFactory.getInstance().getMonitoringManager();
+				ProcessContext pc = ProcessContextFactory.getInstance().createProcessContext(ProcessContextFactory.getParamSet().channel(channel).message(msg));
+				mm.reportProcessStatus(this.adapterNamespace, this.adapterType, ChannelDirection.SENDER , ProcessState.OK, "Message sent to AF", pc);		
+				
+			} catch (TxRollbackException e) {
+			} catch (TxException e) {
+			} catch (Exception e) {
+				TxManager.setRollbackOnly();
+			} finally {
+				if(txTicket != null)
+					try {
+						TxManager.commitLevel(txTicket);
+					} catch (Exception e) {						
+					}
+			}
+		} catch (Exception e) {
+			TRACE.errorT("createMessage()", XIAdapterCategories.CONNECT_AF, "Received exception: " + e.getMessage());
+		}
+	}
+	
 	/**
 	 * <code>sendMessageFromFile</code> manages the file read process and creates
 	 * afterwards the EO(IO) XI message. This message is then sent to the XI AF MP.

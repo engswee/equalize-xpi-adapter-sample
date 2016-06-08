@@ -130,130 +130,104 @@
  
     <!-- Transport protocol settings -->
 
-   <TransportProtocol>
-      <Name>File</Name>
-      <Version>7.1.0</Version>
+	<TransportProtocol>
+      <Name>HTTP</Name>
       <GuiLabels>
-        <Label language="EN">File System</Label>
+        <Label language="EN">HTTP</Label>
       </GuiLabels>
       <ValidMessageProtocols>
         <ProtocolIdentifier>
-          <Name>JCA10</Name>
-          <Version>7.1.0</Version>
+          <Name>OAuth2</Name>
+          <Version></Version>
         </ProtocolIdentifier>
       </ValidMessageProtocols>
       <ChannelAttributes>
         <AttributeGroup>
-          <Name>inboundParameters</Name>
+          <Name>URLParameters</Name>
           <GuiLabels>
-            <Label language="EN">File System Access</Label>
+            <Label language="EN">URL details</Label>
           </GuiLabels>
           <AttributeReference>
-            <ReferenceName>fileInDir</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>fileInName</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>channelAddressMode</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>processMode</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>qos</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>raiseError</ReferenceName>
-          </AttributeReference>
-        </AttributeGroup>
-
-	<!-- Attention: In SP16 the fileProcessParameters group was moved from GlobalChannelAttributes
-             to here to clarify that those parameters belong to the transport protocol.
-             BUT: The filePollInterval and filePollIntervalMsec values of channels that
-             have been created with SP15 or before are lost! I.e. this change is incompatible!
-             Please do not similar incompatible changes if you have released your adapter previously. -->
-
+            <ReferenceName>urlEndpoint</ReferenceName>
+          </AttributeReference>	  
+		</AttributeGroup>
         <AttributeGroup>
-          <Name>fileProcessParameters</Name>
+          <Name>proxySettings</Name>
           <GuiLabels>
-            <Label language="EN">File Processing</Label>
+            <Label language="EN">Proxy Settings</Label>
           </GuiLabels>
           <AttributeReference>
-            <ReferenceName>filePollInterval</ReferenceName>
+            <ReferenceName>useProxy</ReferenceName>
           </AttributeReference>
           <AttributeReference>
-            <ReferenceName>filePollIntervalMsecs</ReferenceName>
+            <ReferenceName>proxyhost</ReferenceName>
+			<EditCondition>
+				<AttributeName>useProxy</AttributeName>
+				<AttributeValue>1</AttributeValue>
+			</EditCondition>			
           </AttributeReference>
-        </AttributeGroup>
-
+          <AttributeReference>
+            <ReferenceName>proxyport</ReferenceName>
+			<EditCondition>
+				<AttributeName>useProxy</AttributeName>
+				<AttributeValue>1</AttributeValue>
+			</EditCondition>
+          </AttributeReference>
+          <AttributeReference>
+            <ReferenceName>proxyuser</ReferenceName>
+			<EditCondition>
+				<AttributeName>useProxy</AttributeName>
+				<AttributeValue>1</AttributeValue>
+			</EditCondition>			
+          </AttributeReference>
+          <AttributeReference>
+            <ReferenceName>proxypwd</ReferenceName>
+			<EditCondition>
+				<AttributeName>useProxy</AttributeName>
+				<AttributeValue>1</AttributeValue>
+			</EditCondition>			
+          </AttributeReference>	  
+		</AttributeGroup>		
         <AttributeGroup>
-          <Name>sampleParameters</Name>
+          <Name>oauthParameters</Name>
           <GuiLabels>
-            <Label language="EN">Sample Channel Parameters (not used, just for demo)</Label>
+            <Label language="EN">OAuth 2.0 Settings</Label>
           </GuiLabels>
           <AttributeReference>
-            <ReferenceName>sampleString</ReferenceName>
+            <ReferenceName>tokenEndpoint</ReferenceName>
           </AttributeReference>
           <AttributeReference>
-            <ReferenceName>samplePassword</ReferenceName>
+            <ReferenceName>consumerKey</ReferenceName>
+          </AttributeReference>			  
+          <AttributeReference>
+            <ReferenceName>user</ReferenceName>
           </AttributeReference>
           <AttributeReference>
-            <ReferenceName>sampleBoolean</ReferenceName>
-          </AttributeReference>
+            <ReferenceName>pwd</ReferenceName>
+          </AttributeReference>	  
+		</AttributeGroup>
+        <AttributeGroup>
+          <Name>processParameters</Name>
+          <GuiLabels>
+            <Label language="EN">Processing</Label>
+          </GuiLabels>
           <AttributeReference>
-            <ReferenceName>sampleLong</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleInteger</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleTable</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBinary</ReferenceName>
+            <ReferenceName>pollInterval</ReferenceName>
           </AttributeReference>
         </AttributeGroup>
       </ChannelAttributes>
       <SecurityAttributes />
     </TransportProtocol>
-
+	
     <!-- Message protocol settings -->
 
     <MessageProtocol>
-      <Name>JCA10</Name>
-      <Version>7.1.0</Version>
+      <Name>OAuth2</Name>
+      <Version></Version>
       <GuiLabels>
-        <Label language="EN">JCA 1.0</Label>
+        <Label language="EN">OAuth 2.0</Label>
       </GuiLabels>
       <SecurityAttributes>
-        <AttributeGroup>
-          <Name>sampleParameters</Name>
-          <GuiLabels>
-            <Label language="EN">Sample Security (Agreement) Parameters (not used, just for demo)</Label>
-          </GuiLabels>
-          <AttributeReference>
-            <ReferenceName>sampleString</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>samplePassword</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBoolean</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleLong</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleInteger</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleTable</ReferenceName>
-          </AttributeReference>
-          <AttributeReference>
-            <ReferenceName>sampleBinary</ReferenceName>
-          </AttributeReference>
-        </AttributeGroup>
       </SecurityAttributes>
       <ModuleProcessorAttributes>
         <ModuleSequence>
@@ -305,7 +279,126 @@
   <!-- ********************************************************************** -->
 
   <!-- Used attributes to configure a JCA channel -->
+  <Attribute>
+    <Name>urlEndpoint</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>required</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Target URL</Label>
+    </GuiLabels>
+  </Attribute>
 
+  <Attribute>
+    <Name>useProxy</Name>
+    <Usage>optional</Usage>
+    <DataType>xsd:boolean</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Use Proxy</Label>
+    </GuiLabels>
+  </Attribute>
+  
+  <Attribute>
+    <Name>proxyhost</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>required</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Proxy Server</Label>
+    </GuiLabels>
+  </Attribute>
+
+  <Attribute>
+    <Name>proxyport</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>required</Usage>
+    <DataType>xsd:integer</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Proxy Port</Label>
+    </GuiLabels>
+  </Attribute>  
+  
+  <Attribute>
+    <Name>proxyuser</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>optional</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Proxy User</Label>
+    </GuiLabels>
+  </Attribute>
+
+  <Attribute isPassword="true">
+    <Name>proxypwd</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>optional</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Proxy Password</Label>
+    </GuiLabels>
+  </Attribute>
+
+  <Attribute>
+    <Name>tokenEndpoint</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>required</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Token Endpoint</Label>
+    </GuiLabels>
+  </Attribute>  
+  
+  <Attribute>
+    <Name>user</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>optional</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Resource Username</Label>
+    </GuiLabels>
+  </Attribute>
+
+  <Attribute isPassword="true">
+    <Name>pwd</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>optional</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Resource Password</Label>
+    </GuiLabels>
+  </Attribute>
+
+  <Attribute>
+    <Name>consumerKey</Name>
+    <Flag>nonTransportable</Flag>
+    <Usage>required</Usage>
+    <DataType>xsd:string</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Consumer Key</Label>
+    </GuiLabels>
+  </Attribute>  
+  
+  <Attribute>
+    <Name>pollInterval</Name>
+    <Usage>required</Usage>
+    <Default>60</Default>
+    <DataType>xsd:integer</DataType>
+    <Length>0</Length>
+    <GuiLabels>
+      <Label language="EN">Polling interval (secs)</Label>
+    </GuiLabels>
+  </Attribute>
+  
   <Attribute>
     <Name>adapterStatus</Name>
     <Usage>optional</Usage>
@@ -313,7 +406,7 @@
     <DataType>xsd:string</DataType>
     <Length>0</Length>
     <GuiLabels>
-        <Label language="EN"></Label>
+        <Label language="EN">Adapter Status</Label>
     </GuiLabels>
     <FixedValue>
       <value>active</value>
@@ -759,7 +852,7 @@
   <Attribute>
     <Name>enableDynConfigSender</Name>
     <Usage>optional</Usage>
-    <Default />
+    <Default>0</Default>
     <DataType>xsd:boolean</DataType>
     <GuiLabels>
       <Label language="EN">Set Adapter-Specific Message Properties</Label>
@@ -769,7 +862,7 @@
   <Attribute>
     <Name>enableDynConfigReceiver</Name>
     <Usage>optional</Usage>
-    <Default />
+    <Default>0</Default>
     <DataType>xsd:boolean</DataType>
     <GuiLabels>
       <Label language="EN">Use Adapter-Specific Message Properties</Label>
