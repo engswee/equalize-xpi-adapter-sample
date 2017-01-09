@@ -4,12 +4,11 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="com.sap.ext.libs.xpi.classpathContainer/adapter"/>
 	<classpathentry kind="con" path="sap.jee5"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Keystore/sap.com~tc~sec~ssf.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~bl~txmanagerimpl~plb~impl.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~bl~guidgenerator~impl.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~tc~je~appcontext_api~API.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/com.equalize.xpi.util.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ksap086/Dropbox/SAP/01 Knowledge/01 Code Repository/02 PI/1 - Library Files/PO 7.4 SP08/Adapter/sap.com~httpclient.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/com.equalize.xpi.af.modules.ejb"/>
+	<classpathentry kind="var" path="PI_LIBRARY/PO 7.4 SP08/Keystore/sap.com~tc~sec~ssf.jar"/>
+	<classpathentry kind="var" path="PI_LIBRARY/PO 7.4 SP08/Adapter/sap.com~httpclient.jar"/>
+	<classpathentry kind="var" path="PI_LIBRARY/PO 7.4 SP08/Adapter/sap.com~tc~bl~guidgenerator~impl.jar"/>
+	<classpathentry kind="var" path="PI_LIBRARY/PO 7.4 SP08/Adapter/sap.com~tc~bl~txmanagerimpl~plb~impl.jar"/>
+	<classpathentry kind="var" path="PI_LIBRARY/PO 7.4 SP08/Adapter/sap.com~tc~je~appcontext_api~API.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/com.equalize.xpi.util"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
