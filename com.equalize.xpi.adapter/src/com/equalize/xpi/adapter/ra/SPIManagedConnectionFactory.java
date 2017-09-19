@@ -4,9 +4,9 @@
 
 package com.equalize.xpi.adapter.ra;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.Collections;
@@ -1291,7 +1291,7 @@ public class SPIManagedConnectionFactory implements ManagedConnectionFactory, Se
 
 		if (fileRead == true) {
 			try {
-				BufferedReader in = new BufferedReader(new FileReader(inputFile));
+				LineNumberReader in = new LineNumberReader(new FileReader(inputFile));
 				String line = null;
 				while ((line = in.readLine()) != null) {
 					msgText = msgText + line + "\n";
